@@ -1,0 +1,28 @@
+data/
+.env
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.DS_Store
+
+# Real personal details - copy seed_data.example.yaml and edit
+scripts/seed_data.yaml
+scripts/seed_data.yml
+scripts/seed_data.json
+scripts/seed_data.backup-*.json
+
+# Anything the app generates holds personal details too. CVs, exports and
+# mined candidates never belong here, whatever they happen to be called.
+*.docx
+*.pdf
+*-cv.md
+job-application-master.md
+/*.json
+/*.csv
+/*.yaml
+/*.yml
+
+# Local environment overrides
+.env.*
+!.env.example

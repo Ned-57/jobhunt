@@ -1,0 +1,105 @@
+identity:
+  name: Your Name
+  email: you@example.com
+  phone: +44 0000 000000
+  portfolio: https://example.com
+  linkedin: https://linkedin.com/in/you
+  github: https://github.com/you
+  links: []
+location:
+  current: City, Country
+  relocating_to: ''
+  citizenship: ''
+  work_rights:
+  - United Kingdom
+  sponsorship_needed: false
+  auth_notes: Anything an application must not get wrong about your right to work.
+core:
+  summary: Two or three plain sentences on what you actually do.
+  positioning: The single sentence you would open a CV with.
+  target_roles:
+  - Backend Software Engineer
+  - Technical Analyst
+  years: '4'
+  seniority: mid
+  motivation: The honest reason you are moving.
+employment:
+- company: Employer
+  title: Job Title
+  start: 2022-07
+  end: 2026-03
+  current: false
+  location: ''
+  note: What the job actually was.
+  bullets: []
+education:
+- school: University
+  qualification: BSc (Hons)
+  field: Subject
+  start: 2016-09
+  end: 2020-06
+  note: ''
+evidence:
+- group: Backend and production systems
+  items:
+  - Something specific and true that you could defend in an interview.
+- group: Ownership end to end
+  items:
+  - A thing you owned from requirements through to production support.
+independent:
+- name: Side project
+  url: https://example.com
+  description: What it is.
+  bullets:
+  - What it evidences.
+  tech:
+  - React
+tech:
+- area: C#/.NET
+  description: Extensive professional use
+  level: production
+- area: Rust
+  description: Independent project work, not production
+  level: project
+- area: Kubernetes
+  description: Covered in a course
+  level: training
+- area: PostgreSQL
+  description: No specialist experience
+  level: never
+prefs:
+  work_modes:
+  - Remote
+  - Hybrid
+  locations:
+  - United Kingdom
+  salary_min: ''
+  salary_max: ''
+  currency: GBP
+  employment:
+  - Permanent
+  company_sizes: []
+  notice_period: ''
+  earliest_start: ''
+  avoid_sectors: []
+  dealbreakers: []
+positioning:
+- role_type: Backend engineering
+  guidance: Which evidence leads for this kind of role, and what not to imply.
+boundaries:
+- Do not claim production Rust experience - it is project work only.
+- Do not imply I have held a formal analyst title.
+- Do not describe planned client work as completed.
+style:
+  english: British
+  tone: Clear, specific and confident.
+  rules:
+  - Avoid filler and generic enthusiasm.
+  - Prefer concrete examples over long skill lists.
+doc_prefs:
+  font: Calibri
+  accent: '#1F3864'
+  max_pages: 1
+  folder: ''
+  editor: ''
+  notes: ''
