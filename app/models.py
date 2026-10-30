@@ -58,22 +58,12 @@ class Identity(BaseModel):
     links: list[str] = Field(default_factory=list)
 
 
-class Location(BaseModel):
-    current: str = ""
-    relocating_to: str = ""
-    citizenship: str = ""
-    work_rights: SmartBulletList = Field(default_factory=list)
-    sponsorship_needed: bool = False
-    auth_notes: str = ""
-
-
 class Core(BaseModel):
     summary: str = ""
     positioning: str = ""
     target_roles: SmartBulletList = Field(default_factory=list)
     years: str = ""
     seniority: str = "mid"
-    motivation: str = ""
 
 
 class Job(BaseModel):
@@ -168,7 +158,6 @@ class Profile(BaseModel):
     """
 
     identity: Identity = Field(default_factory=Identity)
-    location: Location = Field(default_factory=Location)
     core: Core = Field(default_factory=Core)
     employment: list[Job] = Field(default_factory=list)
     education: list[Study] = Field(default_factory=list)
@@ -192,13 +181,13 @@ class Profile(BaseModel):
         """Weighted view of how usable this profile is for prompt building."""
         checks = {
             "Name and contact": bool(self.identity.name and self.identity.email),
-            "Location and work rights": bool(self.location.current),
+            "Where you want to work": bool(self.prefs.locations),
             "What you do": bool(self.core.summary),
             "Target roles": len(self.core.target_roles) > 0,
             "Employment history": len(self.employment) > 0,
             "Evidence bank": sum(len(g.items) for g in self.evidence) >= 5,
             "Technology profile": len(self.tech) >= 3,
-            "Preferences": bool(self.prefs.work_modes or self.prefs.locations),
+            "Preferences": bool(self.prefs.work_modes),
             "Accuracy boundaries": len(self.boundaries) > 0,
         }
         done = sum(1 for v in checks.values() if v)

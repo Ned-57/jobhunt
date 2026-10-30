@@ -1,4 +1,4 @@
-"""Mine bullets out of CVs you have already written, from the command line.
+"""Mine bullet points out of CVs you have already written, from the command line.
 
 The same extraction the app runs at Profile > "Start from a CV you already
 have". This is the batch version, for when you have a folder of them rather
@@ -42,7 +42,7 @@ def known_lines(email: str) -> list[str]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Mine bullets out of existing CVs.")
+    parser = argparse.ArgumentParser(description="Mine bullet points out of existing CVs.")
     parser.add_argument("--dir", required=True, type=Path, help="Folder of .docx CVs")
     parser.add_argument("--email", default="",
                         help="Compare against this account's profile")

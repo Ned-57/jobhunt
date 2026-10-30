@@ -137,13 +137,13 @@ JH.WIZARD_PHASES = [
 
 JH.WIZARD_STEPS = [
   { id: 'contact',     name: 'Contact & location',  phase: 'essential',
-    feeds: 'The header of every CV, and which roles are worth surfacing' },
+    feeds: 'The header of every CV, and where the job hunt looks' },
   { id: 'core',        name: 'Core profile',        phase: 'essential',
     feeds: 'Your opening paragraph, and what the job hunt searches for' },
   { id: 'history',     name: 'Employment & study',  phase: 'essential',
     feeds: 'The Experience and Education sections' },
   { id: 'evidence',    name: 'Evidence bank',       phase: 'strong',
-    feeds: 'The bullets a tailored CV picks from' },
+    feeds: 'The bullet points a tailored CV picks from' },
   { id: 'independent', name: 'Independent work',    phase: 'strong',
     feeds: 'The projects section, when a role calls for it' },
   { id: 'tech',        name: 'Technology profile',  phase: 'strong',
@@ -174,22 +174,17 @@ JH.ESSENTIAL_STEPS = JH.WIZARD_STEPS.filter(s => s.phase === 'essential').map(s 
 /* ---------- question copy, kept out of the render code ---------- */
 JH.COPY = {
   contact: {
-    lead: 'The details that go at the top of every CV, and the constraints that decide which roles are worth surfacing at all.',
-    current: 'State this accurately. Applications ask, and it has to match what you tell them elsewhere.',
-    relocating: 'Leave blank if you are staying put. If you name somewhere, the job hunt will look there too.',
-    rights: 'Each country or bloc where you can already work without a visa.',
-    sponsor: 'I would need sponsorship or a permit for some of the places I want to work',
-    authNotes: 'Permit routes, salary thresholds, timing — anything an application must not get wrong.'
+    lead: 'The details that go at the top of every CV, and where the job hunt should look.',
+    where: 'Add each city, country or "Remote". These are what the job hunt searches.'
   },
   core: {
     lead: 'The shape of the move you are making. This drives what the hunt looks for.',
     summary: 'Plain description of the work you do. Not a pitch.',
     positioning: 'The single sentence you would open a CV with. It gets rewritten per role later.',
-    targets: 'Add several. These are what the job hunt actually searches for.',
-    motivation: 'The honest version. It shapes which roles are worth surfacing, and it comes up in interviews.'
+    targets: 'Add several. These are what the job hunt actually searches for.'
   },
   history: {
-    lead: 'Roles and study. Keep the bullets factual here — the persuasive version gets written per application.'
+    lead: 'Roles and study. Keep the bullet points factual here — the persuasive version gets written per application.'
   },
   evidence: {
     lead: 'The bank every CV and letter draws from. Group by theme rather than by employer, so a tailored CV can pull the right five without rewriting history.',
@@ -212,7 +207,6 @@ JH.COPY = {
     examples: [
       'Do not claim production Rust experience — it is project work only.',
       'Do not imply I have held a formal analyst title.',
-      'Do not claim work rights I do not hold.',
       'Do not describe planned client work as completed.',
       'Do not claim industry experience in sectors I have not worked in.'
     ]
