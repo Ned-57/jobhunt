@@ -30,7 +30,7 @@ IMPORT_SCHEMA = """[
     "summary": "two sentences on what the role actually involves",
     "key_requirements": ["the 5-8 requirements that matter most"],
     "why_match": "which of my evidence lines up, naming it",
-    "concerns": "anything that does not fit, including work authorisation",
+    "concerns": "anything that does not fit",
     "source": "where you found it, e.g. company careers page"
   }
 ]"""
@@ -88,8 +88,6 @@ def what_i_want(p: Profile) -> str:
     lines = [f"Target job titles: {_join(p.core.target_roles)}."]
     if p.core.seniority:
         lines.append(f"Level: {p.core.seniority}.")
-    if prefs.locations:
-        lines.append(f"Locations of interest: {_join(prefs.locations)}.")
     if prefs.work_modes:
         lines.append(f"Working pattern: {_join(prefs.work_modes)}.")
     if prefs.employment:
@@ -104,35 +102,18 @@ def what_i_want(p: Profile) -> str:
         lines.append(f"Earliest start: {prefs.earliest_start}.")
     if prefs.notice_period:
         lines.append(f"Notice period: {prefs.notice_period}.")
-    if p.core.motivation:
-        lines.append(f"Why I am moving: {p.core.motivation.strip()}")
     return _section("What I am looking for", "\n".join(lines))
 
 
 def hard_constraints(p: Profile) -> str:
-    """Work authorisation and dealbreakers.
+    """Where I will work, and dealbreakers.
 
     This block exists because these are the constraints that quietly waste
     the most time when an assistant ignores them.
     """
-    loc = p.location
     lines = []
-    if loc.current:
-        lines.append(f"I currently live in {loc.current}.")
-    if loc.citizenship:
-        lines.append(f"Citizenship: {loc.citizenship}.")
-    if loc.work_rights:
-        lines.append(f"I can work without a visa in: {_join(loc.work_rights)}.")
-    if loc.relocating_to:
-        lines.append(f"I am planning to relocate to {loc.relocating_to}.")
-    if loc.sponsorship_needed:
-        lines.append(
-            "I would need sponsorship or a work permit for some target locations. "
-            "Say so explicitly for any role where that applies, and do not assume "
-            "an employer sponsors unless the advert says so."
-        )
-    if loc.auth_notes:
-        lines.append(loc.auth_notes.strip())
+    if p.prefs.locations:
+        lines.append(f"I want to work in: {_join(p.prefs.locations)}.")
     if p.prefs.avoid_sectors:
         lines.append(f"Do not suggest roles in: {_join(p.prefs.avoid_sectors)}.")
     if p.prefs.dealbreakers:
@@ -313,7 +294,7 @@ def build_hunt(p: Profile, brief: str, max_results: int) -> str:
 
         Work through it like this:
         1. Search job boards and, where you can, the employers' own careers pages.
-        2. Discard anything that fails a hard constraint, especially work authorisation.
+        2. Discard anything that fails a hard constraint.
         3. For each remaining role, check what it actually asks for against my evidence.
         4. Rank by genuine fit, not by how well the advert is written.
 
@@ -375,7 +356,7 @@ def build_assess(p: Profile, advert: str, application: Application | None) -> st
            bank - or say plainly that I have none.
         3. Flag anything the advert asks for that my accuracy boundaries prevent me
            from claiming.
-        4. Check location, salary and work authorisation against my constraints.
+        4. Check location and salary against my constraints.
         5. Finish with a verdict: apply, apply with caveats, or skip - and one sentence
            on why.
 
@@ -616,9 +597,4 @@ def _warnings(p: Profile, request: Any) -> list[str]:
         request.advert.strip() or request.application_id
     ):
         out.append("No job advert supplied, so this prompt is generic.")
-    if p.location.sponsorship_needed and not p.location.auth_notes:
-        out.append(
-            "You have flagged that you need sponsorship somewhere but not said where or "
-            "on what terms. Add a note so suggestions do not ignore it."
-        )
     return out

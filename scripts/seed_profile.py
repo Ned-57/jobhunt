@@ -42,8 +42,6 @@ EXAMPLE_SEED = HERE / "seed_data.example.yaml"
 SEED_CANDIDATES = [HERE / "seed_data.yaml", HERE / "seed_data.yml", HERE / "seed_data.json"]
 
 TODO = [
-    "Current residence - state it accurately per application. "
-    "Profile > Contact & location.",
     "Salary expectation and earliest start - worth checking per application rather "
     "than assuming. Profile > What you will take.",
     "Dealbreakers - what rules a role out regardless of how good it looks. "

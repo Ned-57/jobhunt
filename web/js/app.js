@@ -39,7 +39,7 @@
     { k: 'current',  l: 'This is my current role', t: 'bool' },
     { k: 'location', l: 'Location',   t: 'text' },
     { k: 'note',     l: 'What the job actually was', t: 'area' },
-    { k: 'bullets',  l: 'Factual bullets', t: 'lines', h: 'Plain facts. The persuasive version gets written per application.' }
+    { k: 'bullets',  l: 'Factual bullet points', t: 'lines', h: 'Plain facts. The persuasive version gets written per application.' }
   ];
 
   const SCHEMA = {
@@ -50,12 +50,7 @@
       { k: 'identity.portfolio', l: 'Portfolio or personal site', t: 'url' },
       { k: 'identity.linkedin',  l: 'LinkedIn', t: 'url' },
       { k: 'identity.github',    l: 'GitHub or equivalent', t: 'url' },
-      { k: 'location.current',       l: 'Where do you live now?', t: 'text', h: C.contact.current },
-      { k: 'location.relocating_to', l: 'Planning to move anywhere?', t: 'text', h: C.contact.relocating },
-      { k: 'location.citizenship',   l: 'Citizenship', t: 'text' },
-      { k: 'location.work_rights',   l: 'Where can you work without a visa?', t: 'chips', h: C.contact.rights },
-      { k: 'location.sponsorship_needed', l: C.contact.sponsor, t: 'bool' },
-      { k: 'location.auth_notes',    l: 'Anything else about work authorisation', t: 'area', h: C.contact.authNotes }
+      { k: 'prefs.locations',    l: 'Where do you want to work?', t: 'chips', h: C.contact.where }
     ]},
 
     core: { lead: C.core.lead, fields: [
@@ -63,8 +58,7 @@
       { k: 'core.positioning',  l: 'Your one-line positioning statement', t: 'area', h: C.core.positioning },
       { k: 'core.target_roles', l: 'What job titles are you targeting?', t: 'chips', h: C.core.targets },
       { k: 'core.years',        l: 'Years of relevant experience', t: 'text' },
-      { k: 'core.seniority',    l: 'Level you are aiming at', t: 'select', options: JH.SENIORITY },
-      { k: 'core.motivation',   l: 'Why are you moving?', t: 'area', h: C.core.motivation }
+      { k: 'core.seniority',    l: 'Level you are aiming at', t: 'select', options: JH.SENIORITY }
     ]},
 
     history: { lead: C.history.lead, fields: [
@@ -121,7 +115,6 @@
 
     prefs: { lead: C.prefs.lead, fields: [
       { k: 'prefs.work_modes',    l: 'Working pattern', t: 'toggles', options: JH.WORK_MODES },
-      { k: 'prefs.locations',     l: 'Locations worth searching', t: 'chips' },
       { k: 'prefs.employment',    l: 'Contract type', t: 'toggles', options: JH.EMPLOYMENT },
       { k: 'prefs.company_sizes', l: 'Company size', t: 'toggles', options: JH.COMPANY_SIZE },
       { k: 'prefs.salary_min',    l: 'Salary from', t: 'text', row: 'pay' },
@@ -338,7 +331,7 @@
       el('div.card-body', [
         el('p.hint', { style: { marginTop: 0 },
           text: 'Upload up to ten Word CVs. Contact details, technologies and the ' +
-                'bullets themselves are pulled out for you to accept or reject. ' +
+                'bullet points themselves are pulled out for you to accept or reject. ' +
                 'Nothing is saved until you choose it.' }),
         input, result,
         el('div.row', { style: { marginTop: '10px' } }, [
@@ -366,9 +359,12 @@
     if (data.technologies.length) {
       box.appendChild(el('h4', { style: { marginTop: '14px' }, text: 'Technologies mentioned' }));
       box.appendChild(el('p.hint', { style: { marginTop: 0 },
-        text: 'Added at "hands-on project work" so nothing is overclaimed. ' +
-              'Set the real level afterwards in Technology profile.' }));
-      box.appendChild(U.toggleSet(data.technologies, [], v => {
+        text: 'All selected, so click any you do not want. Added at "hands-on project ' +
+              'work" so nothing is overclaimed. Set the real level afterwards in ' +
+              'Technology profile.' }));
+      const picked = data.technologies.slice();
+      picked.forEach(t => takeTech.add(t));
+      box.appendChild(U.toggleSet(data.technologies, picked, v => {
         takeTech.clear(); v.forEach(t => takeTech.add(t));
       }));
     }
@@ -1232,7 +1228,7 @@
         } else {
           box.appendChild(el('ul', section.lines.map((l, li) => el('li', [
             editable('span', l.text, v => l.text = v),
-            remove('this bullet', () => section.lines.splice(li, 1))
+            remove('this bullet point', () => section.lines.splice(li, 1))
           ]))));
         }
       }
@@ -1255,7 +1251,7 @@
           (entry.bullets || []).length
             ? el('ul', entry.bullets.map((b, bi) => el('li', [
                 editable('span', b, v => entry.bullets[bi] = v),
-                remove('this bullet', () => entry.bullets.splice(bi, 1))
+                remove('this bullet point', () => entry.bullets.splice(bi, 1))
               ]))) : null
         ]));
       });
@@ -1319,14 +1315,14 @@
           el('p.hint', {
             text: doc.characters.toLocaleString() + ' characters. ' +
               (doc.fits_one_page ? 'Should fit one page.'
-                : 'Likely over one page — delete a bullet or two.')
+                : 'Likely over one page — delete a bullet point or two.')
           }),
           cvState.edited ? el('p.hint', [
             el('strong', { text: 'Edited by hand. ' }),
             'Kept for this role until you reset. Rebuilding replaces it.'
           ]) : null,
           cvState.editing ? el('div.banner.info', { style: { marginTop: '8px' },
-            text: 'Click any text to change it. × removes a bullet, an entry or a '
+            text: 'Click any text to change it. × removes a bullet point, an entry or a '
                 + 'whole section. Nothing here touches your profile.' }) : null,
           doc.tailored_fields.length
             ? el('p.hint', { text: 'AI tailoring applied to: ' + doc.tailored_fields.join(', ') + '.' })
@@ -1565,14 +1561,7 @@
       p.identity.github && '- **GitHub:** ' + p.identity.github
     ].filter(Boolean).join('\n'));
 
-    push('Location and work authorisation', [
-      p.location.current && '- Lives in ' + p.location.current + '.',
-      p.location.citizenship && '- Citizenship: ' + p.location.citizenship + '.',
-      p.location.work_rights.length && '- Can work without a visa in: ' + p.location.work_rights.join(', ') + '.',
-      p.location.relocating_to && '- Planning to relocate to ' + p.location.relocating_to + '.',
-      p.location.sponsorship_needed && '- Needs sponsorship or a permit for some target locations.',
-      p.location.auth_notes && '- ' + p.location.auth_notes
-    ].filter(Boolean).join('\n'));
+    push('Where I want to work', list(p.prefs.locations));
 
     push('Core profile', [p.core.summary, p.core.positioning && '\n> ' + p.core.positioning,
       p.core.target_roles.length && '\nTarget roles:\n' + list(p.core.target_roles)].filter(Boolean).join('\n'));

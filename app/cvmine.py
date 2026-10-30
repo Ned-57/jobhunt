@@ -11,11 +11,12 @@ accept or reject, because only they know which claims are still true.
 """
 from __future__ import annotations
 
-import html
 import re
 import zipfile
 from dataclasses import dataclass, field
+from io import BytesIO
 from typing import Any, Iterable
+from xml.etree import ElementTree
 
 from .custard import sanitise, strip_bullet
 from .taxonomy import display_terms, tokens
@@ -24,8 +25,28 @@ MAX_FILES = 10
 MAX_BYTES = 5 * 1024 * 1024
 
 EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]{2,}")
-PHONE_RE = re.compile(r"\+\d[\d ()-]{7,}\d")
+# International, or a UK number written the way people actually write one.
+PHONE_RE = re.compile(r"\+\d[\d ()-]{7,}\d|\b0\d{2,4}[ -]?\d{3,4}[ -]?\d{3,4}\b")
 URL_RE = re.compile(r"(?:https?://)?(?:www\.)?[\w-]+\.[\w.-]+(?:/[\w./#?=&-]*)?")
+# Text is shaped like an address more often than it is one: "Node.js", "ASP.NET".
+SITE_RE = re.compile(
+    r"(?:https?://)?(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?!js$|py$)[a-z]{2,}(?:/\S*)?"
+)
+LINKEDIN_RE = re.compile(r"linkedin\.com/(?:in|pub)/[\w%-]+", re.I)
+GITHUB_RE = re.compile(r"github\.com/([\w-]+)(/[\w.-]+)?", re.I)
+NOT_A_PORTFOLIO = ("linkedin.", "github.", "gmail.", "outlook.", "hotmail.", "yahoo.", "www.w3")
+
+WORD = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+RELS = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+DRAWING = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+COMPAT = "{http://schemas.openxmlformats.org/markup-compatibility/2006}"
+PACKAGE_REL = "{http://schemas.openxmlformats.org/package/2006/relationships}Relationship"
+
+# Formatting holds tab stops that look like tabs, and a Fallback repeats the
+# text box beside it for older readers.
+SKIPPED = {WORD + "pPr", WORD + "rPr", COMPAT + "Fallback"}
+EXTRA_PART = re.compile(r"word/(header|footer)\d*\.xml")
+FIELD_LINK = re.compile(r'HYPERLINK\s+"([^"]+)"')
 
 # Headings tell us nothing; they are not evidence.
 HEADING_RE = re.compile(
@@ -51,16 +72,93 @@ class Candidate:
                 "technologies": self.technologies, "words": self.words}
 
 
-def docx_lines(data: bytes, name: str) -> list[str]:
-    """Paragraph text from a .docx. A docx is a zip of XML - no dependency."""
+@dataclass
+class Paragraph:
+    text: str = ""
+    links: list[str] = field(default_factory=list)
+
+
+def _paragraphs(root: ElementTree.Element, targets: dict[str, str]) -> list[Paragraph]:
+    """Every paragraph in one XML part, in reading order.
+
+    Walking the XML rather than stripping its tags is the point. A drawing
+    anchored to a paragraph stores its position as element text, so stripping
+    tags turns <wp:align>right</wp:align> into "right" on the end of whatever
+    shares that paragraph - usually the name. Links are resolved because a CV
+    tends to show the word "LinkedIn", not the address behind it.
+    """
+    found: list[Paragraph] = []
+
+    def read(node: ElementTree.Element, para: Paragraph | None) -> None:
+        for child in node:
+            tag = child.tag
+            if tag in SKIPPED:
+                continue
+            if tag == WORD + "p":
+                # Text boxes nest paragraphs inside paragraphs. Taking the slot
+                # first keeps the outer one ahead of what it contains.
+                inner = Paragraph()
+                found.append(inner)
+                read(child, inner)
+            elif para is None:
+                read(child, None)
+            elif tag == WORD + "t":
+                para.text += child.text or ""
+            elif tag == WORD + "tab":
+                para.text += "\t"
+            elif tag in (WORD + "br", WORD + "cr"):
+                para.text += "\n"
+            elif tag == WORD + "instrText":
+                para.links.extend(FIELD_LINK.findall(child.text or ""))
+            else:
+                if tag in (WORD + "hyperlink", DRAWING + "hlinkClick"):
+                    target = targets.get(child.get(RELS + "id", ""))
+                    if target:
+                        para.links.append(target)
+                read(child, para)
+
+    read(root, None)
+    return found
+
+
+def _link_targets(archive: zipfile.ZipFile, part: str) -> dict[str, str]:
+    """Where each link in a part points, keyed by its relationship id."""
+    folder, _, name = part.rpartition("/")
     try:
-        with zipfile.ZipFile(__import__("io").BytesIO(data)) as archive:
-            xml = archive.read("word/document.xml").decode("utf-8")
-    except (zipfile.BadZipFile, KeyError, OSError, UnicodeDecodeError):
+        root = ElementTree.fromstring(archive.read(f"{folder}/_rels/{name}.rels"))
+    except KeyError:
+        return {}
+    return {rel.get("Id", ""): rel.get("Target", "")
+            for rel in root.iter(PACKAGE_REL)
+            if rel.get("Type", "").endswith("/hyperlink")}
+
+
+def read_docx(data: bytes) -> list[Paragraph]:
+    """Paragraphs of a .docx, one per line. A docx is a zip of XML - no dependency.
+
+    Headers come first because contact details often live there.
+    """
+    raw: list[Paragraph] = []
+    try:
+        with zipfile.ZipFile(BytesIO(data)) as archive:
+            extras = sorted(n for n in archive.namelist() if EXTRA_PART.fullmatch(n))
+            parts = ([n for n in extras if "header" in n] + ["word/document.xml"]
+                     + [n for n in extras if "footer" in n])
+            for part in parts:
+                root = ElementTree.fromstring(archive.read(part))
+                raw.extend(_paragraphs(root, _link_targets(archive, part)))
+    except (zipfile.BadZipFile, KeyError, OSError, ElementTree.ParseError):
         return []
-    xml = xml.replace("</w:p>", "\n").replace("<w:tab/>", "\t").replace("<w:br/>", "\n")
-    text = html.unescape(re.sub(r"<[^>]+>", "", xml))
-    return [sanitise(line) for line in text.split("\n") if line.strip()]
+
+    tidy: list[Paragraph] = []
+    for para in raw:
+        lines = [line for line in map(sanitise, para.text.split("\n")) if line]
+        # A linked icon has no text, but its link still counts.
+        if not lines and para.links:
+            tidy.append(Paragraph(links=para.links))
+        for index, line in enumerate(lines):
+            tidy.append(Paragraph(line, para.links if index == 0 else []))
+    return tidy
 
 
 def looks_like_list(line: str) -> bool:
@@ -88,32 +186,66 @@ def similarity(a: frozenset[str], b: frozenset[str]) -> float:
     return len(a & b) / len(a | b)
 
 
-def contact_from(lines: Iterable[str]) -> dict[str, str]:
-    """Contact details, which sit in the first few lines of every CV."""
-    blob = "\n".join(list(lines)[:8])
+def _urls(paragraphs: list[Paragraph]) -> list[str]:
+    """Real links first, then anything typed out as an address."""
+    links = [link for para in paragraphs for link in para.links
+             if link.lower().startswith("http")]
+    text = EMAIL_RE.sub(" ", "\n".join(para.text for para in paragraphs))
+    return links + URL_RE.findall(text)
+
+
+def _github(urls: list[str]) -> str:
+    """A profile link if there is one, otherwise the owner of the first repo."""
+    matches = [m for m in map(GITHUB_RE.search, urls) if m]
+    for match in matches:
+        if not match.group(2):
+            return "https://github.com/" + match.group(1)
+    return "https://github.com/" + matches[0].group(1) if matches else ""
+
+
+def _portfolio(paragraphs: list[Paragraph]) -> str:
+    """The first ordinary website, ignoring profiles and webmail."""
+    real = {link for para in paragraphs for link in para.links}
+    for url in _urls(paragraphs):
+        low = url.lower()
+        if any(skip in low for skip in NOT_A_PORTFOLIO):
+            continue
+        if url in real or SITE_RE.fullmatch(url):
+            return _https(url)
+    return ""
+
+
+def contact_from(paragraphs: list[Paragraph]) -> dict[str, str]:
+    """Contact details. These sit at the top of a CV, though a profile link may not."""
+    top = paragraphs[:8]
+    blob = "\n".join(para.text for para in top)
     found: dict[str, str] = {}
 
-    email = EMAIL_RE.search(blob)
+    addresses = [link.split(":", 1)[1].split("?")[0] for para in top for link in para.links
+                 if link.lower().startswith("mailto:")]
+    email = EMAIL_RE.search(blob) or EMAIL_RE.search(" ".join(addresses))
     if email:
         found["email"] = email.group(0)
     phone = PHONE_RE.search(blob)
     if phone:
         found["phone"] = re.sub(r"\s+", " ", phone.group(0)).strip()
 
-    for url in URL_RE.findall(blob):
-        low = url.lower()
-        if "@" in url or low.endswith((".com", ".co.uk")) and "." not in low.split(".")[0]:
-            pass
-        if "linkedin." in low:
-            found.setdefault("linkedin", _https(url))
-        elif "github." in low:
-            found.setdefault("github", _https(url))
-        elif not any(d in low for d in ("gmail.", "outlook.", "hotmail.", "yahoo.")) \
-                and "." in low and not low.startswith("www.w3"):
-            found.setdefault("portfolio", _https(url))
+    # The whole document for these: a project link further down can still be
+    # the only place a CV gives the address.
+    urls = _urls(paragraphs)
+    linkedin = next((url for url in urls if LINKEDIN_RE.search(url)), "")
+    if linkedin:
+        found["linkedin"] = _https(linkedin.split("?")[0].rstrip("/"))
+    github = _github(urls)
+    if github:
+        found["github"] = github
+    # Only near the top. Further down, a link is a project rather than a portfolio.
+    portfolio = _portfolio(top)
+    if portfolio:
+        found["portfolio"] = portfolio
 
     # The name is the first line of essentially every CV.
-    for line in list(lines)[:3]:
+    for line in [para.text for para in paragraphs if para.text][:3]:
         words = line.split()
         if 1 < len(words) <= 4 and not any(c in line for c in "@|:") \
                 and all(w[:1].isupper() for w in words if w[:1].isalpha()):
@@ -144,13 +276,14 @@ def mine(files: list[tuple[str, bytes]], known: Iterable[str] = (),
         if len(data) > MAX_BYTES:
             skipped.append(f"{name} is larger than 5 MB and was skipped.")
             continue
-        lines = docx_lines(data, name)
+        paragraphs = read_docx(data)
+        lines = [para.text for para in paragraphs if para.text]
         if not lines:
             skipped.append(f"{name} could not be read as a .docx and was skipped.")
             continue
         read += 1
 
-        for key, value in contact_from(lines).items():
+        for key, value in contact_from(paragraphs).items():
             contact.setdefault(key, value)
 
         for line in lines:

@@ -160,8 +160,8 @@ def _sentences(text: str) -> list[str]:
 def pick_summary(profile: Profile) -> str:
     """Compose the profile paragraph from the user's own sentences.
 
-    positioning, summary and motivation are each written about the same person
-    and overlap heavily, so they are merged sentence by sentence and near
+    positioning and summary are both written about the same person and
+    overlap heavily, so they are merged sentence by sentence and near
     duplicates dropped - the positioning line and the first line of the summary
     are usually the same claim worded twice.
 
@@ -174,7 +174,7 @@ def pick_summary(profile: Profile) -> str:
     kept_openings: list[tuple[str, ...]] = []
     words = 0
 
-    for source in (profile.core.positioning, profile.core.summary, profile.core.motivation):
+    for source in (profile.core.positioning, profile.core.summary):
         for sentence in _sentences(source):
             terms = tokens(sentence)
             opening = _opening(sentence)
@@ -618,7 +618,7 @@ def build(profile: Profile, request: CvRequest,
             doc.tailored_fields.append("evidence emphasis")
 
     doc.contact = [c for c in [
-        profile.identity.email, profile.identity.phone, profile.location.current,
+        profile.identity.email, profile.identity.phone,
         profile.identity.portfolio, profile.identity.linkedin, profile.identity.github,
     ] if c]
 

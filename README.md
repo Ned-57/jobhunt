@@ -33,12 +33,13 @@ Three routes, in descending order of effort:
 
 **Upload CVs you already have.** Profile → *"Start from a CV you already
 have"*. Up to ten `.docx` at a time. It pulls out contact details, the
-technologies mentioned, and the bullets themselves, then offers them for review
-— everything is opt-in one line at a time, because only you know which claims
-are still true. Mined technologies are recorded at *hands-on project work* and
+technologies mentioned, and the bullet points themselves, then offers them for
+review. Technologies start selected, so you only deselect what is wrong. Bullet
+points are opt-in one line at a time, because only you know which claims are
+still true. Mined technologies are recorded at *hands-on project work* and
 never higher; the app does not upgrade a claim on your behalf. PDFs are refused,
-because a PDF has no reliable structure to read and guessing produces bullets
-that are subtly wrong.
+because a PDF has no reliable structure to read and guessing produces bullet
+points that are subtly wrong.
 
 The same extraction runs from the command line over a whole folder:
 
@@ -80,7 +81,7 @@ Questionnaire / CV upload  ->  Profile  ->  CV builder      ->  tailored CV
 
 `app/cvgen.py`. No AI call — it scores every claim in your profile against what
 the advert actually asks for, keeps the strongest, orders sections by relevance
-and renders the result. Evidence-bank lines and bullets written under a job
+and renders the result. Evidence-bank lines and bullet points written under a job
 compete on merit for the same space, so where you happened to type something
 does not decide whether it appears.
 

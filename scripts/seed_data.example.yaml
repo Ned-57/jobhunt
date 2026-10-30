@@ -6,14 +6,6 @@ identity:
   linkedin: https://linkedin.com/in/you
   github: https://github.com/you
   links: []
-location:
-  current: City, Country
-  relocating_to: ''
-  citizenship: ''
-  work_rights:
-  - United Kingdom
-  sponsorship_needed: false
-  auth_notes: Anything an application must not get wrong about your right to work.
 core:
   summary: Two or three plain sentences on what you actually do.
   positioning: The single sentence you would open a CV with.
@@ -22,7 +14,6 @@ core:
   - Technical Analyst
   years: '4'
   seniority: mid
-  motivation: The honest reason you are moving.
 employment:
 - company: Employer
   title: Job Title
