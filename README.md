@@ -1,17 +1,6 @@
 # JobHunt
 
-Answer a set of questions once, or upload a couple of old CVs. The app turns
-that into tailored CVs, tailored prompts for whichever AI assistant you already
-use, and a tracker for what comes back.
-
-Two things it deliberately does not do:
-
-- **It does not call an AI provider.** No API keys, no per-token cost. The Hunt
-  button builds a prompt, hands it to Claude / ChatGPT / Perplexity, and you
-  paste the reply back.
-- **It does not write your CV.** The CV builder only ever re-arranges text you
-  wrote, so it cannot invent a claim. What it can do is tell you what it could
-  not evidence.
+An app to help with job applications.
 
 ## Running it
 
